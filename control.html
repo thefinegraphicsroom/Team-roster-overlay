@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>IQOO Soul – Control Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton+SC&family=Bakbak+One&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0810;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:28px 0 60px;min-height:100vh;gap:20px;font-family:'Bakbak One',sans-serif}
+
+/* ══ STATUS BAR ══ */
+.status-bar{width:min(1040px,calc(100vw - 32px));display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.status-indicator{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#444;flex-shrink:0;transition:background .3s}
+.status-dot.connected{background:#27ae60;box-shadow:0 0 6px rgba(39,174,96,0.6)}
+.status-dot.waiting{background:#e6a217;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn-open-overlay{font-family:'Bakbak One',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px 22px;background:#7235E6;color:#fff;border:none;border-radius:7px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
+.btn-open-overlay:hover{background:#8c4fff;transform:translateY(-1px)}
+.btn-open-overlay svg{flex-shrink:0}
+
+/* ══ PREVIEW ══ */
+.preview-label{font-size:11px;color:rgba(255,255,255,0.18);letter-spacing:3px;text-transform:uppercase}
+.scale-wrap{transform-origin:top center}
+
+/* ══ MINI OVERLAY PREVIEW ══ */
+.overlay{position:relative;width:1823px;height:250px;background:#241630;overflow:hidden}
+.overlay-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;pointer-events:none;z-index:0}
+.overlay.has-bg-img .overlay-bg-img{display:block}
+.panel-left,.panel-right,.team-logo,.team-name-el,.team-lineup-el,#playersRoot{position:absolute;z-index:1}
+.panel-left{left:28px;top:25px;width:285px;height:200px;background:#09060D;border-radius:5px 0 0 5px;-webkit-mask-image:linear-gradient(to right,#000 80%,transparent 50%);mask-image:linear-gradient(to right,#000 80%,transparent 100%);overflow:hidden}
+.panel-right{left:305px;top:25px;width:1473px;height:200px;background:#09060D;border-radius:0 5px 5px 0;-webkit-mask-image:linear-gradient(to left,#000 97%,transparent 50%);mask-image:linear-gradient(to left,#000 97%,transparent 100%);overflow:hidden}
+.panel-left .panel-img,.panel-right .panel-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.panel-left.has-img .panel-img,.panel-right.has-img .panel-img{display:block}
+.content-fade{position:absolute;inset:0;z-index:2;transition:opacity 0.5s ease}
+.content-fade.fading{opacity:0}
+.team-logo{left:52px;top:44px;width:100px;height:100px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden}
+.team-logo img.logo-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:none}
+.team-logo.has-img .logo-img{display:block}
+.team-logo.has-img .ph{display:none}
+.team-logo .ph{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ph-text{font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:1px}
+.team-name-el{left:52px;top:140px;width:200px;height:40px;display:flex;align-items:center}
+.team-name-el input{font-family:'Anton SC',sans-serif;font-size:27px;color:#5918E3;background:transparent;border:none;outline:none;width:100%;line-height:1;padding:0;text-transform:uppercase}
+.team-lineup-el{left:52px;top:172px;width:229px;height:41px;font-family:'Bakbak One',sans-serif;font-size:30px;color:#FFFFFF;display:flex;align-items:center;pointer-events:none;user-select:none}
+#playersRoot{left:335px;top:0;width:1439px;height:250px;overflow:hidden}
+#playerSlider{position:absolute;left:0;top:0;width:2200px;height:250px;transition:none}
+#playerSlider.sliding{transition:transform 5s linear}
+.p-bg{position:absolute;top:44px;width:160px;height:160px;background:#7235E6;overflow:hidden}
+.p-bg .p-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.p-bg.has-img .p-bg-img{display:block}
+.p-img-wrap{position:absolute;top:44px;width:160px;height:160px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.p-img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:none}
+.p-img-wrap.has-img img{display:block}
+.p-img-wrap.has-img .p-ph{display:none}
+.p-ph{display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none}
+.p-ph-text{font-size:11px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:1px}
+.p-name{position:absolute;top:107px;width:160px;height:34px;display:flex;align-items:center}
+.p-name input{font-family:'Bakbak One',sans-serif;font-size:22px;color:#FFFFFF;background:transparent;border:none;outline:none;width:100%;text-transform:uppercase;padding:0}
+.p-name input::placeholder{color:rgba(255,255,255,.25);font-size:14px}
+
+/* ══ EDITOR ══ */
+.editor-wrap{width:min(1040px,calc(100vw - 32px));display:flex;flex-direction:column;gap:12px}
+.editor-panel{background:#110e1c;border:1px solid rgba(114,53,230,0.2);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.ep-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.25);padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.ep-section-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(114,53,230,0.7);margin-top:2px}
+.rows-group{display:flex;flex-direction:column;gap:6px}
+.rect-row{display:grid;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.05);transition:border-color .15s}
+.rect-row:hover{border-color:rgba(114,53,230,0.35)}
+.rect-row.color-img-row{grid-template-columns:180px 34px 110px 26px 1fr}
+.rect-row.color-only-row{grid-template-columns:220px 34px 110px}
+.rl-label{font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.swatch-btn{position:relative;width:34px;height:34px;border-radius:6px;border:1.5px solid rgba(255,255,255,0.1);cursor:pointer;overflow:hidden;flex-shrink:0}
+.swatch-preview{position:absolute;inset:0;pointer-events:none;border-radius:4px}
+.swatch-btn input[type="color"]{position:absolute;inset:-8px;width:calc(100% + 16px);height:calc(100% + 16px);border:none;cursor:pointer;opacity:0}
+.hex-input{font-family:'Bakbak One',sans-serif;font-size:13px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:5px;color:#fff;padding:5px 9px;width:110px;outline:none;letter-spacing:1px;text-transform:uppercase;transition:border-color .15s}
+.hex-input:focus{border-color:#7235E6}
+.hex-input.err{border-color:#e63535}
+.or-label{font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:2px;text-align:center}
+.upload-img-btn{font-family:'Bakbak One',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:7px 14px;background:rgba(114,53,230,0.12);color:rgba(255,255,255,0.55);border:1px solid rgba(114,53,230,0.3);border-radius:5px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;position:relative;overflow:hidden}
+.upload-img-btn:hover{background:rgba(114,53,230,0.28);color:#fff;border-color:#7235E6}
+.upload-img-btn.has-file{background:rgba(39,174,96,0.15);border-color:rgba(39,174,96,0.45);color:rgba(255,255,255,0.8)}
+.upload-img-btn input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-img-btn .btn-lbl{pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.remove-img-x{font-size:13px;line-height:1;color:rgba(255,255,255,0.35);cursor:pointer;position:relative;z-index:2;flex-shrink:0;display:none;padding:0 2px}
+.upload-img-btn.has-file .remove-img-x{display:inline}
+.sep{height:1px;background:rgba(255,255,255,0.05);margin:4px 0}
+.ep-actions{display:flex;gap:10px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);margin-top:2px;flex-wrap:wrap;align-items:center}
+.btn-reset{font-family:'Bakbak One',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:8px 20px;background:transparent;color:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:5px;cursor:pointer;transition:all .15s}
+.btn-reset:hover{border-color:rgba(255,255,255,.3);color:#fff}
+
+/* ══ CSV PANEL ══ */
+.csv-panel{background:#0d0b18;border:1px solid rgba(114,53,230,0.35);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.csv-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.3);display:flex;align-items:center;gap:8px}
+.csv-upload-zone{border:2px dashed rgba(114,53,230,0.4);border-radius:10px;padding:22px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;position:relative;transition:all .2s;background:rgba(114,53,230,0.05)}
+.csv-upload-zone:hover,.csv-upload-zone.drag-over{border-color:#7235E6;background:rgba(114,53,230,0.12)}
+.csv-upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.csv-zone-text{font-size:13px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-align:center}
+.csv-zone-sub{font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:1px}
+.roster-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.team-counter{font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:1px;background:rgba(255,255,255,0.05);padding:6px 14px;border-radius:20px;white-space:nowrap}
+.team-counter span{color:#7235E6;font-size:14px}
+.btn-prev,.btn-next{font-family:'Bakbak One',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:7px 18px;background:rgba(114,53,230,0.15);color:rgba(255,255,255,0.6);border:1px solid rgba(114,53,230,0.35);border-radius:5px;cursor:pointer;transition:all .15s}
+.btn-prev:hover,.btn-next:hover{background:rgba(114,53,230,0.3);color:#fff}
+.auto-play-row{display:flex;align-items:center;gap:10px;margin-left:auto}
+.interval-label{font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:1px;white-space:nowrap}
+.interval-select{font-family:'Bakbak One',sans-serif;font-size:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:5px;color:#fff;padding:5px 10px;outline:none;cursor:pointer}
+.interval-select option{background:#1a1530}
+.btn-autoplay{font-family:'Bakbak One',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:7px 18px;border-radius:5px;cursor:pointer;transition:all .15s;border:1px solid rgba(39,174,96,0.4);background:rgba(39,174,96,0.12);color:rgba(255,255,255,0.6)}
+.btn-autoplay:hover{background:rgba(39,174,96,0.25);color:#fff}
+.btn-autoplay.active{background:rgba(39,174,96,0.3);color:#fff;border-color:rgba(39,174,96,0.7)}
+.btn-stopauto{font-family:'Bakbak One',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:7px 16px;border-radius:5px;cursor:pointer;transition:all .15s;border:1px solid rgba(220,50,50,0.4);background:rgba(220,50,50,0.1);color:rgba(255,255,255,0.5);display:none}
+.btn-stopauto:hover{background:rgba(220,50,50,0.25);color:#fff}
+.btn-stopauto.visible{display:inline-block}
+.team-list-wrap{display:none;flex-direction:column;gap:6px}
+.team-list-wrap.visible{display:flex}
+.team-list-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.2)}
+.team-list{display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto;padding:2px}
+.team-pill{font-family:'Bakbak One',sans-serif;font-size:11px;padding:5px 12px;border-radius:20px;background:rgba(114,53,230,0.1);border:1px solid rgba(114,53,230,0.25);color:rgba(255,255,255,0.5);cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .15s;white-space:nowrap}
+.team-pill:hover{background:rgba(114,53,230,0.25);color:#fff}
+.team-pill.active{background:#7235E6;color:#fff;border-color:#7235E6}
+.progress-bar-wrap{width:100%;height:3px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;display:none}
+.progress-bar-wrap.visible{display:block}
+.progress-bar{height:100%;width:0%;background:#7235E6;border-radius:3px;transition:width linear}
+.csv-note{font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:0.5px;line-height:1.6}
+.csv-note strong{color:rgba(255,255,255,0.4)}
+
+/* ══ HOW TO USE BANNER ══ */
+.how-to{background:#0d0b18;border:1px solid rgba(114,53,230,0.2);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:8px}
+.how-to-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(114,53,230,0.6)}
+.how-to-steps{display:flex;gap:20px;flex-wrap:wrap}
+.how-to-step{display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:.5px}
+.step-num{width:20px;height:20px;border-radius:50%;background:rgba(114,53,230,0.3);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- STATUS + OPEN OVERLAY BUTTON -->
+<div class="status-bar">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-family:'Anton SC',sans-serif;font-size:22px;color:#7235E6;letter-spacing:2px">IQOO SOUL — CONTROL PANEL</div>
+    <div class="status-indicator">
+      <div class="status-dot waiting" id="statusDot"></div>
+      <span id="statusText">Waiting for overlay window…</span>
+    </div>
+  </div>
+  <button class="btn-open-overlay" onclick="openOverlay()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+    Open Overlay Window
+  </button>
+</div>
+
+<!-- HOW TO USE -->
+<div class="editor-wrap">
+  <div class="how-to">
+    <div class="how-to-title">⚡ How to use</div>
+    <div class="how-to-steps">
+      <div class="how-to-step"><div class="step-num">1</div><span>Click "Open Overlay Window" to launch the overlay in a new tab</span></div>
+      <div class="how-to-step"><div class="step-num">2</div><span>Add that window as an OBS Browser Source (2217 × 250)</span></div>
+      <div class="how-to-step"><div class="step-num">3</div><span>All changes here sync to the overlay in real time</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="preview-label">Local Preview — 2217 × 250 px</div>
+
+<div class="scale-wrap" id="scaleWrap">
+  <div class="overlay" id="overlay">
+    <img class="overlay-bg-img" id="overlayBgImg" alt="">
+    <div class="panel-left"  id="panelLeft" ><img class="panel-img" id="panelLeftImg"  alt=""></div>
+    <div class="panel-right" id="panelRight"><img class="panel-img" id="panelRightImg" alt=""></div>
+    <div class="content-fade" id="contentFade">
+      <div class="team-logo" id="teamLogo">
+        <img class="logo-img" id="teamLogoImg" alt="Team Logo">
+        <div class="ph">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="rgba(255,255,255,0.35)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10l-7 4V7l7 4z"/></svg>
+          <span class="ph-text">Logo</span>
+        </div>
+        <input type="file" id="teamLogoInput" accept="image/*" style="display:none">
+      </div>
+      <div class="team-name-el"><input type="text" id="teamNameInput" value="IQOO SOUL" maxlength="20"></div>
+      <div class="team-lineup-el" id="teamLineupEl">TEAM LINEUP</div>
+      <div id="playersRoot"><div id="playerSlider"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CSV PANEL ══ -->
+<div class="editor-wrap">
+  <div class="csv-panel">
+    <div class="csv-title">📋 &nbsp; CSV Roster — Upload your roster sheet to cycle teams on overlay</div>
+    <div class="csv-upload-zone" id="csvZone">
+      <input type="file" id="csvFileInput" accept=".csv,text/csv">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="rgba(114,53,230,0.6)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+      <div class="csv-zone-text" id="csvZoneText">Drop your CSV here or click to upload</div>
+      <div class="csv-zone-sub">Team Name, Player 1–5 IGN, Team Logo</div>
+    </div>
+    <div class="roster-controls" id="rosterControls" style="display:none">
+      <button class="btn-prev" onclick="prevTeam()">◀ Prev</button>
+      <div class="team-counter">Team <span id="currentTeamNum">1</span> / <span id="totalTeams">0</span></div>
+      <button class="btn-next" onclick="nextTeam()">Next ▶</button>
+      <div class="auto-play-row">
+        <span class="interval-label">Cycle every</span>
+        <select class="interval-select" id="intervalSelect">
+          <option value="3000">3 sec</option>
+          <option value="5000">5 sec</option>
+          <option value="8000">8 sec</option>
+          <option value="10000">10 sec</option>
+          <option value="15000">15 sec</option>
+        </select>
+        <button class="btn-autoplay" id="btnAutoplay" onclick="toggleAutoplay()">▶ Auto Cycle</button>
+        <button class="btn-stopauto" id="btnStop" onclick="toggleAutoplay()">■ Stop</button>
+      </div>
+    </div>
+    <div class="progress-bar-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="team-list-wrap" id="teamListWrap">
+      <div class="team-list-title">Click any team to jump to it</div>
+      <div class="team-list" id="teamList"></div>
+    </div>
+    <div class="csv-note">
+      <strong>Note:</strong> The Team Logo column uses local file paths which browsers cannot access for security reasons.
+      You can manually upload each team's logo by clicking the logo box in the preview, or leave it blank.
+      All other data — team name and player IGNs — loads automatically from your CSV.
+    </div>
+  </div>
+
+  <!-- ══ EDITOR PANEL ══ -->
+  <div class="editor-panel">
+    <div class="ep-title">🎨 &nbsp; Rectangle Editor &nbsp;|&nbsp; Text Color Editor</div>
+    <div class="ep-section-title">BACKGROUND RECTANGLES</div>
+    <div class="rows-group" id="rectGrid"></div>
+    <div class="sep"></div>
+    <div class="ep-section-title">TEXT COLORS</div>
+    <div class="rows-group" id="textGrid"></div>
+    <div class="ep-actions">
+      <button class="btn-reset" onclick="resetAll()">↺ Reset All Defaults</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   BROADCAST CHANNEL
+══════════════════════════════════════ */
+var ch = new BroadcastChannel('iqoo_soul_overlay');
+var overlayConnected = false;
+
+ch.onmessage = function(e){
+  var msg = e.data;
+  if(!msg) return;
+  if(msg.type === 'OVERLAY_READY' || msg.type === 'PONG'){
+    overlayConnected = true;
+    document.getElementById('statusDot').className = 'status-dot connected';
+    document.getElementById('statusText').textContent = 'Overlay connected ✓';
+    // Push full current state on connect
+    pushFullState();
+  }
+};
+
+// Ping periodically to detect if overlay is open
+setInterval(function(){
+  ch.postMessage({type:'PING'});
+}, 3000);
+
+function send(msg){
+  ch.postMessage(msg);
+}
+
+function openOverlay(){
+  var url = 'overlay.html';
+  window.open(url, 'iqoo_soul_overlay', 'width=2217,height=250');
+  // reset connection status briefly
+  document.getElementById('statusDot').className = 'status-dot waiting';
+  document.getElementById('statusText').textContent = 'Connecting to overlay…';
+  overlayConnected = false;
+  setTimeout(function(){ ch.postMessage({type:'PING'}); }, 800);
+}
+
+/* Push full state to newly connected overlay */
+function pushFullState(){
+  // Colors
+  RECTS.forEach(function(r){ send({type:'COLOR', key:r.key, value:rState[r.key]}); });
+  TEXTS.forEach(function(t){ send({type:'COLOR', key:t.key, value:tState[t.key]}); });
+  // Current team data
+  var teamName = document.getElementById('teamNameInput').value;
+  var players = [];
+  document.querySelectorAll('.p-name input').forEach(function(el){ players.push(el.value); });
+  var logoImg = document.getElementById('teamLogoImg');
+  send({type:'TEAM_DATA', data:{teamName:teamName, players:players, logoDataUrl: logoImg.src||null}});
+  // Player images
+  var wraps = document.querySelectorAll('.p-img-wrap');
+  wraps.forEach(function(wrap, i){
+    var img = wrap.querySelector('img');
+    if(wrap.classList.contains('has-img') && img.src){
+      send({type:'PLAYER_IMAGE', index:i, dataUrl:img.src});
+    }
+  });
+}
+
+/* ══════════════════════════════════════
+   ROSTER STATE
+══════════════════════════════════════ */
+var roster=[], currentIdx=0, autoTimer=null, isAutoplaying=false, slideTimer=null;
+
+/* ══════════════════════════════════════
+   CSV UPLOAD
+══════════════════════════════════════ */
+var csvZone=document.getElementById('csvZone');
+csvZone.addEventListener('dragover',function(e){e.preventDefault();csvZone.classList.add('drag-over');});
+csvZone.addEventListener('dragleave',function(){csvZone.classList.remove('drag-over');});
+csvZone.addEventListener('drop',function(e){e.preventDefault();csvZone.classList.remove('drag-over');var f=e.dataTransfer.files[0];if(f)parseCSVFile(f);});
+document.getElementById('csvFileInput').addEventListener('change',function(e){var f=e.target.files[0];if(f)parseCSVFile(f);});
+
+function parseCSVFile(file){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var lines=e.target.result.split('\n'), parsed=[];
+    for(var i=1;i<lines.length;i++){
+      var line=lines[i].trim(); if(!line) continue;
+      var cols=parseCSVLine(line), teamName=(cols[0]||'').trim();
+      if(!teamName) continue;
+      parsed.push({teamName:teamName,players:[(cols[1]||'').trim(),(cols[2]||'').trim(),(cols[3]||'').trim(),(cols[4]||'').trim(),(cols[5]||'').trim()],logoPath:(cols[6]||'').trim()});
+    }
+    if(!parsed.length){alert('No valid teams found in CSV.');return;}
+    roster=parsed; currentIdx=0;
+    document.getElementById('csvZoneText').textContent='✔ '+file.name+' — '+parsed.length+' teams loaded';
+    csvZone.style.borderColor='rgba(39,174,96,0.6)'; csvZone.style.background='rgba(39,174,96,0.06)';
+    document.getElementById('rosterControls').style.display='flex';
+    document.getElementById('teamListWrap').classList.add('visible');
+    document.getElementById('totalTeams').textContent=parsed.length;
+    buildTeamPills(); loadTeam(0,false);
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line){
+  var result=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){var c=line[i];if(c==='"'){inQ=!inQ;}else if(c===','&&!inQ){result.push(cur);cur='';}else{cur+=c;}}
+  result.push(cur); return result;
+}
+
+function buildTeamPills(){
+  var list=document.getElementById('teamList'); list.innerHTML='';
+  roster.forEach(function(team,idx){
+    var pill=document.createElement('div'); pill.className='team-pill'+(idx===0?' active':'');
+    pill.textContent=team.teamName; pill.dataset.idx=idx;
+    pill.addEventListener('click',function(){loadTeam(parseInt(this.dataset.idx),true);});
+    list.appendChild(pill);
+  });
+}
+
+function updatePills(){
+  document.querySelectorAll('.team-pill').forEach(function(p){p.classList.toggle('active',parseInt(p.dataset.idx)===currentIdx);});
+}
+
+function countPlayers(team){
+  var count=0;
+  for(var i=0;i<team.players.length;i++){if(team.players[i]&&team.players[i].trim()!=='')count=i+1;}
+  return Math.max(4,Math.min(5,count));
+}
+
+/* ══════════════════════════════════════
+   LOAD TEAM
+══════════════════════════════════════ */
+function loadTeam(idx,animate){
+  if(!roster.length) return;
+  clearTimeout(slideTimer);
+  currentIdx=((idx%roster.length)+roster.length)%roster.length;
+  var team=roster[currentIdx];
+  document.getElementById('currentTeamNum').textContent=currentIdx+1;
+  updatePills();
+
+  if(!animate){
+    resetSliderInstant(); applyTeamData(team); return;
+  }
+  // Fade out (local + broadcast)
+  var fade=document.getElementById('contentFade');
+  fade.classList.add('fading'); send({type:'FADE',state:'out'});
+  setTimeout(function(){
+    resetSliderInstant();
+    applyTeamData(team);
+    setTimeout(function(){fade.classList.remove('fading'); send({type:'FADE',state:'in'});},50);
+  },500);
+}
+
+function applyTeamData(team){
+  document.getElementById('teamNameInput').value=team.teamName;
+  var nameInputs=document.querySelectorAll('.p-name input');
+  for(var i=0;i<nameInputs.length;i++){nameInputs[i].value=team.players[i]||'';}
+  var logoImg=document.getElementById('teamLogoImg'),logoWrap=document.getElementById('teamLogo');
+  if(team.logoPath&&team.logoPath!==''){
+    logoImg.src=team.logoPath;
+    logoImg.onload=function(){logoWrap.classList.add('has-img');};
+    logoImg.onerror=function(){logoWrap.classList.remove('has-img');logoImg.src='';};
+  } else {logoImg.src='';logoWrap.classList.remove('has-img');}
+
+  // Broadcast team data
+  send({type:'TEAM_DATA',data:{teamName:team.teamName,players:team.players,logoDataUrl:logoImg.src||null}});
+}
+
+function resetSliderInstant(){
+  var ps=document.getElementById('playerSlider');
+  ps.classList.remove('sliding'); ps.style.transform='translateX(0)';
+  send({type:'SLIDE_RESET'});
+}
+
+function slideLeft(){
+  var ps=document.getElementById('playerSlider');
+  ps.classList.add('sliding'); ps.style.transform='translateX(-364px)';
+  send({type:'SLIDE_LEFT'});
+}
+
+function prevTeam(){if(isAutoplaying)stopAutoplay();loadTeam(currentIdx-1,true);}
+function nextTeam(){if(isAutoplaying)resetAutoplayTimer();loadTeam(currentIdx+1,true);}
+
+/* ══════════════════════════════════════
+   AUTOPLAY
+══════════════════════════════════════ */
+function toggleAutoplay(){isAutoplaying?stopAutoplay():startAutoplay();}
+function startAutoplay(){
+  if(!roster.length) return;
+  isAutoplaying=true;
+  document.getElementById('btnAutoplay').classList.add('active');
+  document.getElementById('btnAutoplay').textContent='▶ Playing';
+  document.getElementById('btnStop').classList.add('visible');
+  document.getElementById('progressWrap').classList.add('visible');
+  scheduleNext();
+}
+function stopAutoplay(){
+  isAutoplaying=false; clearTimeout(autoTimer); clearTimeout(slideTimer);
+  document.getElementById('btnAutoplay').classList.remove('active');
+  document.getElementById('btnAutoplay').textContent='▶ Auto Cycle';
+  document.getElementById('btnStop').classList.remove('visible');
+  document.getElementById('progressWrap').classList.remove('visible');
+  setProgress(0,0);
+}
+function scheduleNext(){
+  var team=roster[currentIdx], has5=countPlayers(team)>=5;
+  var totalTime=parseInt(document.getElementById('intervalSelect').value);
+  var slideDelay=totalTime-7500;
+  setProgress(0,50);
+  setTimeout(function(){setProgress(100,totalTime-100);},100);
+  if(has5&&slideDelay>500){slideTimer=setTimeout(function(){slideLeft();},slideDelay);}
+  autoTimer=setTimeout(function(){
+    var fade=document.getElementById('contentFade');
+    fade.classList.add('fading'); send({type:'FADE',state:'out'});
+    setTimeout(function(){
+      resetSliderInstant();
+      if(roster.length>0){
+        currentIdx=((currentIdx+1)%roster.length+roster.length)%roster.length;
+        var nextTeamData=roster[currentIdx];
+        document.getElementById('currentTeamNum').textContent=currentIdx+1;
+        updatePills(); applyTeamData(nextTeamData);
+      }
+      setTimeout(function(){fade.classList.remove('fading');send({type:'FADE',state:'in'});if(isAutoplaying)scheduleNext();},50);
+    },500);
+  },totalTime);
+}
+function setProgress(pct,duration){
+  var bar=document.getElementById('progressBar');
+  bar.style.transition=duration>0?'width '+duration+'ms linear':'none';
+  bar.style.width=pct+'%';
+}
+
+/* ══════════════════════════════════════
+   BUILD PLAYERS
+══════════════════════════════════════ */
+var BG_X_OFFSET=133;
+var playerBgXs=[-92,272,637,1002,1367];
+var playerNameXs=[91,456,821,1179,1541];
+var defaultNames=["SOULNAKUL","SOULLEGIT","SOULGOBLIN","SOULJOKER","SOULTHUNDER"];
+var pSlider=document.getElementById('playerSlider');
+var playerImgDataUrls=[null,null,null,null,null];
+
+playerBgXs.forEach(function(rawBgX,i){
+  var bgLeft=rawBgX+BG_X_OFFSET, nameLeft=playerNameXs[i]+BG_X_OFFSET;
+  var bgBox=document.createElement('div'); bgBox.className='p-bg'; bgBox.style.left=bgLeft+'px';
+  var bgBoxImg=document.createElement('img'); bgBoxImg.className='p-bg-img'; bgBox.appendChild(bgBoxImg);
+  pSlider.appendChild(bgBox);
+
+  var wrap=document.createElement('div'); wrap.className='p-img-wrap'; wrap.style.left=bgLeft+'px';
+  var img=document.createElement('img'); img.alt=defaultNames[i]; wrap.appendChild(img);
+  var ph=document.createElement('div'); ph.className='p-ph';
+  ph.innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="rgba(255,255,255,0.45)"><path d="M12 3L6 9h4v6h4V9h4L12 3zM4 19h16v2H4v-2z"/></svg><span class="p-ph-text">Upload</span>';
+  wrap.appendChild(ph);
+  var fi=document.createElement('input'); fi.type='file'; fi.accept='image/*'; fi.style.display='none';
+  fi.addEventListener('change',function(e){
+    var f=e.target.files[0]; if(!f)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var dataUrl=ev.target.result;
+      img.src=dataUrl; wrap.classList.add('has-img');
+      playerImgDataUrls[i]=dataUrl;
+      send({type:'PLAYER_IMAGE', index:i, dataUrl:dataUrl});
+    };
+    reader.readAsDataURL(f);
+  });
+  wrap.appendChild(fi);
+  wrap.addEventListener('click',function(){fi.click();});
+  pSlider.appendChild(wrap);
+
+  var nameDiv=document.createElement('div'); nameDiv.className='p-name'; nameDiv.style.left=nameLeft+'px';
+  var ni=document.createElement('input'); ni.type='text'; ni.value=defaultNames[i]; ni.maxLength=14;
+  ni.addEventListener('input',function(){
+    // Broadcast all player names on any change
+    var names=[];
+    document.querySelectorAll('.p-name input').forEach(function(el){names.push(el.value);});
+    send({type:'TEAM_DATA',data:{
+      teamName:document.getElementById('teamNameInput').value,
+      players:names,
+      logoDataUrl:document.getElementById('teamLogoImg').src||null
+    }});
+  });
+  nameDiv.appendChild(ni); pSlider.appendChild(nameDiv);
+});
+
+/* Team name live sync */
+document.getElementById('teamNameInput').addEventListener('input',function(){
+  var names=[];
+  document.querySelectorAll('.p-name input').forEach(function(el){names.push(el.value);});
+  send({type:'TEAM_DATA',data:{
+    teamName:this.value,
+    players:names,
+    logoDataUrl:document.getElementById('teamLogoImg').src||null
+  }});
+});
+
+/* TEAM LOGO */
+var tlw=document.getElementById('teamLogo'),tli=document.getElementById('teamLogoImg'),tlf=document.getElementById('teamLogoInput');
+tlw.addEventListener('click',function(){tlf.click();});
+tlf.addEventListener('change',function(e){
+  var f=e.target.files[0]; if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var dataUrl=ev.target.result;
+    tli.src=dataUrl; tlw.classList.add('has-img');
+    var names=[];
+    document.querySelectorAll('.p-name input').forEach(function(el){names.push(el.value);});
+    send({type:'TEAM_DATA',data:{
+      teamName:document.getElementById('teamNameInput').value,
+      players:names,
+      logoDataUrl:dataUrl
+    }});
+  };
+  reader.readAsDataURL(f);
+});
+
+/* ══════════════════════════════════════
+   RECTANGLE EDITOR
+══════════════════════════════════════ */
+var RECTS=[
+  {key:'mainBg',    label:'Main Background',          defaultColor:'#241630',
+   applyColor:function(c){document.getElementById('overlay').style.background=c;},
+   imgElId:'overlayBgImg',containerId:'overlay',hasImgCls:'has-bg-img'},
+  {key:'leftPanel', label:'Left Panel (Logo BG)',      defaultColor:'#09060D',
+   applyColor:function(c){document.getElementById('panelLeft').style.background=c;},
+   imgElId:'panelLeftImg',containerId:'panelLeft',hasImgCls:'has-img'},
+  {key:'rightPanel',label:'Right Panel (Players BG)',  defaultColor:'#09060D',
+   applyColor:function(c){document.getElementById('panelRight').style.background=c;},
+   imgElId:'panelRightImg',containerId:'panelRight',hasImgCls:'has-img'},
+  {key:'playerBg',  label:'Player BG Boxes (x5 same)', defaultColor:'#7235E6',
+   applyColor:function(c){document.querySelectorAll('.p-bg').forEach(function(el){el.style.background=c;});},
+   isPlayerBg:true}
+];
+var rState={};
+RECTS.forEach(function(r){rState[r.key]=r.defaultColor;});
+
+var rectGrid=document.getElementById('rectGrid');
+RECTS.forEach(function(rect){
+  var row=document.createElement('div'); row.className='rect-row color-img-row';
+  var lbl=document.createElement('div'); lbl.className='rl-label'; lbl.textContent=rect.label;
+  var swatchBtn=document.createElement('div'); swatchBtn.className='swatch-btn';
+  var preview=document.createElement('div'); preview.className='swatch-preview'; preview.style.background=rect.defaultColor;
+  var picker=document.createElement('input'); picker.type='color'; picker.value=rect.defaultColor;
+  swatchBtn.appendChild(preview); swatchBtn.appendChild(picker);
+  var hexIn=document.createElement('input'); hexIn.type='text'; hexIn.className='hex-input';
+  hexIn.value=rect.defaultColor.replace('#','').toUpperCase(); hexIn.maxLength=6; hexIn.placeholder='RRGGBB';
+  var orLbl=document.createElement('div'); orLbl.className='or-label'; orLbl.textContent='OR';
+  var upBtn=document.createElement('div'); upBtn.className='upload-img-btn';
+  var btnLbl=document.createElement('span'); btnLbl.className='btn-lbl'; btnLbl.textContent='Upload Image';
+  var removeX=document.createElement('span'); removeX.className='remove-img-x'; removeX.textContent='x';
+  var fileIn=document.createElement('input'); fileIn.type='file'; fileIn.accept='image/*';
+  upBtn.appendChild(btnLbl); upBtn.appendChild(removeX); upBtn.appendChild(fileIn);
+
+  fileIn.addEventListener('change',function(e){
+    var f=e.target.files[0]; if(!f)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var url=ev.target.result;
+      if(rect.isPlayerBg){
+        document.querySelectorAll('.p-bg').forEach(function(bgEl){var im=bgEl.querySelector('.p-bg-img');if(im){im.src=url;bgEl.classList.add('has-img');}});
+        send({type:'IMAGE',key:'playerBg',dataUrl:url});
+      } else {
+        var imgEl=document.getElementById(rect.imgElId),container=document.getElementById(rect.containerId);
+        if(imgEl&&container){imgEl.src=url;container.classList.add(rect.hasImgCls);}
+        send({type:'IMAGE',key:rect.key,dataUrl:url});
+      }
+      upBtn.classList.add('has-file'); var nm=f.name; if(nm.length>22)nm=nm.slice(0,20)+'...'; btnLbl.textContent=nm;
+    };
+    reader.readAsDataURL(f);
+  });
+  removeX.addEventListener('click',function(e){
+    e.stopPropagation();
+    if(rect.isPlayerBg){
+      document.querySelectorAll('.p-bg').forEach(function(bgEl){var im=bgEl.querySelector('.p-bg-img');if(im){im.src='';bgEl.classList.remove('has-img');}});
+      send({type:'IMAGE',key:'playerBg',dataUrl:null});
+    } else {
+      var imgEl=document.getElementById(rect.imgElId),container=document.getElementById(rect.containerId);
+      if(imgEl) imgEl.src=''; if(container&&rect.hasImgCls)container.classList.remove(rect.hasImgCls);
+      send({type:'IMAGE',key:rect.key,dataUrl:null});
+    }
+    upBtn.classList.remove('has-file'); btnLbl.textContent='Upload Image'; fileIn.value='';
+  });
+
+  function applyRectColor(rawHex){
+    var c='#'+rawHex.replace('#',''); rState[rect.key]=c; preview.style.background=c;
+    try{picker.value=c;}catch(e){} hexIn.classList.remove('err'); rect.applyColor(c);
+    send({type:'COLOR',key:rect.key,value:c});
+  }
+  picker.addEventListener('input',function(){hexIn.value=picker.value.replace('#','').toUpperCase();applyRectColor(picker.value);});
+  hexIn.addEventListener('input',function(){var raw=hexIn.value.trim().replace('#','');if(/^[0-9A-Fa-f]{6}$/.test(raw)){hexIn.classList.remove('err');applyRectColor('#'+raw);}else{hexIn.classList.add('err');}});
+  hexIn.addEventListener('blur',function(){var raw=hexIn.value.trim().replace('#','');if(/^[0-9A-Fa-f]{6}$/.test(raw)){hexIn.value=raw.toUpperCase();hexIn.classList.remove('err');}else{hexIn.value=rState[rect.key].replace('#','').toUpperCase();hexIn.classList.remove('err');}});
+
+  row.appendChild(lbl); row.appendChild(swatchBtn); row.appendChild(hexIn); row.appendChild(orLbl); row.appendChild(upBtn);
+  rectGrid.appendChild(row);
+  rect._picker=picker; rect._hexIn=hexIn; rect._preview=preview; rect._upBtn=upBtn; rect._btnLbl=btnLbl; rect._fileIn=fileIn;
+});
+
+/* TEXT COLORS */
+var TEXTS=[
+  {key:'teamName', label:'Team Name Text',    defaultColor:'#5918E3', applyColor:function(c){document.getElementById('teamNameInput').style.color=c;}},
+  {key:'lineup',   label:'Team Lineup Text',  defaultColor:'#FFFFFF', applyColor:function(c){document.getElementById('teamLineupEl').style.color=c;}},
+  {key:'playerNames',label:'Player Names (x5)',defaultColor:'#FFFFFF', applyColor:function(c){document.querySelectorAll('.p-name input').forEach(function(el){el.style.color=c;});}}
+];
+var tState={}; TEXTS.forEach(function(t){tState[t.key]=t.defaultColor;});
+var textGrid=document.getElementById('textGrid');
+TEXTS.forEach(function(txt){
+  var row=document.createElement('div'); row.className='rect-row color-only-row';
+  var lbl=document.createElement('div'); lbl.className='rl-label'; lbl.textContent=txt.label;
+  var swatchBtn=document.createElement('div'); swatchBtn.className='swatch-btn';
+  var preview=document.createElement('div'); preview.className='swatch-preview'; preview.style.background=txt.defaultColor;
+  var picker=document.createElement('input'); picker.type='color'; picker.value=txt.defaultColor;
+  swatchBtn.appendChild(preview); swatchBtn.appendChild(picker);
+  var hexIn=document.createElement('input'); hexIn.type='text'; hexIn.className='hex-input';
+  hexIn.value=txt.defaultColor.replace('#','').toUpperCase(); hexIn.maxLength=6; hexIn.placeholder='RRGGBB';
+
+  function applyTextColor(rawHex){
+    var c='#'+rawHex.replace('#',''); tState[txt.key]=c; preview.style.background=c;
+    try{picker.value=c;}catch(e){} hexIn.classList.remove('err'); txt.applyColor(c);
+    send({type:'COLOR',key:txt.key,value:c});
+  }
+  picker.addEventListener('input',function(){hexIn.value=picker.value.replace('#','').toUpperCase();applyTextColor(picker.value);});
+  hexIn.addEventListener('input',function(){var raw=hexIn.value.trim().replace('#','');if(/^[0-9A-Fa-f]{6}$/.test(raw)){hexIn.classList.remove('err');applyTextColor('#'+raw);}else{hexIn.classList.add('err');}});
+  hexIn.addEventListener('blur',function(){var raw=hexIn.value.trim().replace('#','');if(/^[0-9A-Fa-f]{6}$/.test(raw)){hexIn.value=raw.toUpperCase();hexIn.classList.remove('err');}else{hexIn.value=tState[txt.key].replace('#','').toUpperCase();hexIn.classList.remove('err');}});
+
+  row.appendChild(lbl); row.appendChild(swatchBtn); row.appendChild(hexIn);
+  textGrid.appendChild(row);
+  txt._picker=picker; txt._hexIn=hexIn; txt._preview=preview;
+});
+
+/* RESET ALL */
+function resetAll(){
+  RECTS.forEach(function(rect){
+    var c=rect.defaultColor; rState[rect.key]=c;
+    rect._preview.style.background=c; try{rect._picker.value=c;}catch(e){}
+    rect._hexIn.value=c.replace('#','').toUpperCase(); rect._hexIn.classList.remove('err');
+    rect.applyColor(c); send({type:'COLOR',key:rect.key,value:c});
+    if(rect.isPlayerBg){document.querySelectorAll('.p-bg').forEach(function(bgEl){var im=bgEl.querySelector('.p-bg-img');if(im){im.src='';bgEl.classList.remove('has-img');}});send({type:'IMAGE',key:'playerBg',dataUrl:null});}
+    else{var imgEl=document.getElementById(rect.imgElId),container=document.getElementById(rect.containerId);if(imgEl)imgEl.src='';if(container&&rect.hasImgCls)container.classList.remove(rect.hasImgCls);send({type:'IMAGE',key:rect.key,dataUrl:null});}
+    if(rect._upBtn)rect._upBtn.classList.remove('has-file');
+    if(rect._btnLbl)rect._btnLbl.textContent='Upload Image';
+    if(rect._fileIn)rect._fileIn.value='';
+  });
+  TEXTS.forEach(function(txt){
+    var c=txt.defaultColor; tState[txt.key]=c;
+    txt._preview.style.background=c; try{txt._picker.value=c;}catch(e){}
+    txt._hexIn.value=c.replace('#','').toUpperCase(); txt._hexIn.classList.remove('err');
+    txt.applyColor(c); send({type:'COLOR',key:txt.key,value:c});
+  });
+}
+
+/* SCALE */
+var sw=document.getElementById('scaleWrap');
+function applyScale(){var scale=Math.min(1,(window.innerWidth-32)/2217);sw.style.transform='scale('+scale+')';sw.style.height=(250*scale)+'px';}
+applyScale();
+window.addEventListener('resize',applyScale);
+</script>
+</body>
+</html>
